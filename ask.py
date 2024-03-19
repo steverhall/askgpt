@@ -29,6 +29,5 @@ if __name__ == "__main__":
         prompt += " " + arg
 
     response = query_chatgpt(prompt)
-    #check if response starts with ASK:
     print(response)
 
