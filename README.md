@@ -21,7 +21,7 @@ zsh> ask how do I list all files including hidden
 zsh> ls -a  
 ```
 
-To acceept askgpt's response, press enter. To cancel, backspace over text or press CTRL-C.
+To accept askgpt's response, press enter. To cancel, backspace over text or press CTRL-C.
 
 
 ## Standard ChatGPT requests
