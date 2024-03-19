@@ -49,13 +49,19 @@ OPENAI_API_KEY=[YOUR OPENAI API KEY]
 export OPENAI_API_KEY
 
 ask() {
-    # alter ~/Dev/askgpt/ask.py as appropriate
+    if [ $# -eq 0 ]; then
+        echo "ask: \c"
+        read user_input
+        set -- $user_input
+    fi
+
     local cmd=$(python3 ~/Dev/askgpt/ask.py "$@")
+    # if cmd starts with ASK, then it's a question
     if [[ $cmd == ASK* ]]; then
         cmd=${cmd:5}
         print $cmd
-        return
+    else
+        print -z $cmd
     fi
-    print -z $cmd
 }
 ```
