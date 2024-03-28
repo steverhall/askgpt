@@ -27,13 +27,25 @@ To accept askgpt's response, press enter. To cancel, backspace over text or pres
 ## Standard ChatGPT requests
 
 If the query appears to be unrelated to a linux command, askgpt will just print the results.
+You can force the general response by using `ai` instead of `ask`
 
 Example:
 
 ```
-zsh> ask what is the highest mountain
+zsh> ai what is the highest mountain
 The highest mountain in the world is Mount Everest.
 zsh>
+```
+
+## Quoting
+
+Some requests may require quoting the entire string, for instance, when using some punctionation (?,.$). To avoid this, just type `ask` or `ai` followed by ENTER. Then type string.
+
+Example:
+
+```
+zsh> ai
+ai: what are quotes(") for?
 ```
 
 ## Installation
@@ -50,7 +62,7 @@ export OPENAI_API_KEY
 
 ask() {
     if [ $# -eq 0 ]; then
-        echo "ask: \c"
+        echo "ask: \c" 
         read user_input
         set -- $user_input
     fi
@@ -64,4 +76,16 @@ ask() {
         print -z $cmd
     fi
 }
+ai() {
+    if [ $# -eq 0 ]; then
+        echo "ai: \c" 
+        read user_input
+        set -- $user_input
+    fi
+
+    source ~/Dev/askgpt/venv/bin/activate
+    python3 ~/Dev/askgpt/ask.py -q "$@"
+    deactivate
+}
 ```
+
