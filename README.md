@@ -67,7 +67,7 @@ ask() {
         set -- $user_input
     fi
 
-    local cmd=$(python3 ~/Dev/askgpt/ask.py "$@")
+    local cmd=$(~/Dev/askgtp/venv/bin/python ~/Dev/askgpt/ask.py "$@")
     # if cmd starts with ASK, then it's a question
     if [[ $cmd == ASK* ]]; then
         cmd=${cmd:5}
@@ -83,9 +83,8 @@ ai() {
         set -- $user_input
     fi
 
-    source ~/Dev/askgpt/venv/bin/activate
-    python3 ~/Dev/askgpt/ask.py -q "$@"
-    deactivate
+    local cmd=$(~/Dev/askgpt/venv/bin/python ~/Dev/askgpt/ask.py -q "$@")
+    print $cmd
 }
 ```
 
