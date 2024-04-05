@@ -60,6 +60,8 @@ ai: what are quotes(") for?
 OPENAI_API_KEY=[YOUR OPENAI API KEY]
 export OPENAI_API_KEY
 
+ASKGPT_PATH=~/Dev/askgpt
+
 ask() {
     if [ $# -eq 0 ]; then
         echo "ask: \c" 
@@ -67,7 +69,7 @@ ask() {
         set -- $user_input
     fi
 
-    local cmd=$(~/Dev/askgtp/venv/bin/python ~/Dev/askgpt/ask.py "$@")
+    local cmd=$(source $ASKGPT_PATH/venv/bin/activate && $ASKGPT_PATH/venv/bin/python $ASKGPT_PATH/ask.py "$@" && deactivate)
     # if cmd starts with ASK, then it's a question
     if [[ $cmd == ASK* ]]; then
         cmd=${cmd:5}
@@ -83,7 +85,7 @@ ai() {
         set -- $user_input
     fi
 
-    local cmd=$(~/Dev/askgpt/venv/bin/python ~/Dev/askgpt/ask.py -q "$@")
+    local cmd=$(source $ASKGPT_PATH/venv/bin/activate && $ASKGPT_PATH/venv/bin/python $ASKGPT_PATH/ask.py -q "$@" && deactivate)
     print $cmd
 }
 ```
