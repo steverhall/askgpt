@@ -85,8 +85,9 @@ ai() {
         set -- $user_input
     fi
 
-    local cmd=$(source $ASKGPT_PATH/venv/bin/activate && $ASKGPT_PATH/venv/bin/python $ASKGPT_PATH/ask.py -q "$@" && deactivate)
-    print $cmd
+    source $ASKGPT_PATH/venv/bin/activate
+    $ASKGPT_PATH/venv/bin/python $ASKGPT_PATH/ask.py -q "$@"
+    deactivate
 }
 ```
 
