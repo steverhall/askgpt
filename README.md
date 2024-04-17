@@ -51,11 +51,15 @@ ai: what are quotes(") for?
 ## Installation
 
 1. Clone repository
-2. `pip install openai`
-3. Edit your ~.zshrc file and add the following, making sure you alter the path as appropriate for the location of your files:
-4. Restart your shell, or logout and back in again
+2. `pipx install ./askgpt`
 
 
+## Uninstall
+
+`pipx uninstall askgpt`
+
+
+## Sample .zshrc
 ```
 OPENAI_API_KEY=[YOUR OPENAI API KEY]
 export OPENAI_API_KEY
@@ -64,30 +68,28 @@ ASKGPT_PATH=~/Dev/askgpt
 
 ask() {
     if [ $# -eq 0 ]; then
-        echo "ask: \c" 
+        echo "ask: \c"
         read user_input
         set -- $user_input
     fi
 
-    local cmd=$(source $ASKGPT_PATH/venv/bin/activate && $ASKGPT_PATH/venv/bin/python $ASKGPT_PATH/ask.py "$@" && deactivate)
-    # if cmd starts with ASK, then it's a question
-    if [[ $cmd == ASK* ]]; then
-        cmd=${cmd:5}
-        print $cmd
+    local cmd=$(askgpt "$@")
+    # if askgpt returns NULL it is outside of the CLI domain
+    if [[ $cmd == NULL* ]]; then
+        print "Outside of CLI domain"
     else
+        # Add output to zsh history
         print -z $cmd
     fi
 }
+
 ai() {
     if [ $# -eq 0 ]; then
-        echo "ai: \c" 
+        echo "ai: \c"
         read user_input
         set -- $user_input
     fi
-
-    source $ASKGPT_PATH/venv/bin/activate
-    $ASKGPT_PATH/venv/bin/python $ASKGPT_PATH/ask.py -q "$@"
-    deactivate
-}
+    askgpt -q "$@"
+}                          
 ```
 

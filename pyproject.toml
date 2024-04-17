@@ -9,6 +9,8 @@ license = "MIT"
 python = "^3.10"
 rich = "^13.7.1"
 openai = "^1.17.0"
+textual = "^0.56.4"
+textual-dev = "^1.5.1"
 
 [tool.poetry.scripts]
 askgpt = "askgpt.__main__:main"
