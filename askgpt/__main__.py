@@ -1,8 +1,9 @@
+import asyncio
 import json
 import os
 import sys
 import time
-from openai import OpenAI
+from openai import AsyncOpenAI
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.progress import Progress
@@ -13,7 +14,7 @@ from textual.reactive import var
 from textual.widgets import Static, Input, Markdown, Footer
 from textual.binding import Binding
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 DEFAULT_SYSTEM_PROMPTS=[{"name": "Linux AI", "content": """
            You are a helpful Linux and MacOS CLI assistant. Respond only with
@@ -69,11 +70,11 @@ def query_chatgpt(prompt, system_prompt):
     return response.choices[0].message.content
 
 
-def markdown_chatgpt(prompt, system_prompt):
+async def markdown_chatgpt(prompt, system_prompt):
     console = Console()
     msg_history = [{"role": "system", "content": system_prompt},
                    {"role": "user", "content": prompt}]
-    response = client.chat.completions.create(
+    response = await client.chat.completions.create(
         model="gpt-4",
         messages=msg_history)
 
@@ -104,11 +105,13 @@ class AskGPT(App):
 
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.value == "":
-            self.exit()
+            sys.exit()
 
+        self.query_one("#gpt_query").loading = True
         self.query_one("#gpt_query").clear()
-        result = markdown_chatgpt(event.value,
+        result = await markdown_chatgpt(event.value,
                                   self.system_prompts[self.prompt_idx]["content"])
+        self.query_one("#gpt_query").loading = False
         self.query_one("#gpt_response").update(result)
 
     async def on_load(self):
@@ -127,5 +130,5 @@ class AskGPT(App):
 
 def main():
     app = AskGPT()
-    app.run(inline=True)
+    asyncio.run(app.run(inline=True))
 
