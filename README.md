@@ -59,6 +59,13 @@ ai: what are quotes(") for?
 `pipx uninstall askgpt`
 
 
+## Run from source
+
+1. `poetry install`
+2. `poetry shell`
+3. `python3 -m askgpt`
+
+
 ## Sample .zshrc
 ```
 OPENAI_API_KEY=[YOUR OPENAI API KEY]
