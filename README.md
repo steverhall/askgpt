@@ -39,7 +39,7 @@ zsh>
 
 ## Quoting
 
-Some requests may require quoting the entire string, for instance, when using some punctionation (?,.$). To avoid this, just type `ask` or `ai` followed by ENTER. Then type string.
+Some requests may require quoting the entire string, for instance, when using some punctuation (?,.$). To avoid this, just type `ask` or `ai` followed by ENTER. Then type string.
 
 Example:
 
@@ -59,44 +59,34 @@ ai: what are quotes(") for?
 `pipx uninstall askgpt`
 
 
-## Run from source
-
-1. `poetry install`
-2. `poetry shell`
-3. `python3 -m askgpt`
-
-
 ## Sample .zshrc
 ```
 OPENAI_API_KEY=[YOUR OPENAI API KEY]
 export OPENAI_API_KEY
 
-ASKGPT_PATH=~/Dev/askgpt
-
 ask() {
     if [ $# -eq 0 ]; then
-        echo "ask: \c"
+        echo "ask: \c" 
         read user_input
         set -- $user_input
     fi
 
-    local cmd=$(askgpt "$@")
-    # if askgpt returns NULL it is outside of the CLI domain
-    if [[ $cmd == NULL* ]]; then
-        print "Outside of CLI domain"
+    local prompt=$(printf "%s " "$@")
+    local cmd=$(askgpt --prompt "$prompt")
+    if [[ $cmd == NULL ]]; then
+        print "No results found"
     else
-        # Add output to zsh history
         print -z $cmd
     fi
 }
-
 ai() {
     if [ $# -eq 0 ]; then
-        echo "ai: \c"
+        echo "ai: \c" 
         read user_input
         set -- $user_input
     fi
-    askgpt -q "$@"
-}                          
+
+    askgpt -ai "$@"
+}             
 ```
 
