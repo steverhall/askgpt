@@ -6,7 +6,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 
 console = Console()
-default_system_prompt = "You are an assistant that answers with a single MacOS CLI command based on the request. No other output, it must be a valid MacOS CLI command and if none can be given, respond with NULL. Again, only output the command, no markdown, no additional words or help."
+default_system_prompt = "You are an assistant that answers with a single Ubuntu Linux CLI command based on the request. No other output, it must be a valid Ubuntu Linux CLI command and if none can be given, respond with NULL. Again, only output the command, no markdown, no additional words or help."
 markdown_system_prompt = "You are an assistant that responds with output formatted in Markdown."
 
 async def query_chatgpt(prompt, system_prompt, model):
@@ -53,9 +53,7 @@ def parse_args():
     parser.add_argument(
         "--prompt",
         "-p",
-
         type=str,
-
         help="The prompt to send to the AI."
     )
     return parser.parse_args()

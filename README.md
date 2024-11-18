@@ -81,12 +81,20 @@ ask() {
 }
 ai() {
     if [ $# -eq 0 ]; then
-        echo "ai: \c" 
+        echo "ai: \c"
         read user_input
         set -- $user_input
     fi
 
-    askgpt -ai "$@"
-}             
+    local prompt=$(printf "%s " "$@")
+    local response=$(askgpt --ai --prompt "$prompt")
+    # if response is longer than 20 lines, pipe it to less
+    local lines=$(echo $response | wc -l)
+    if [[ $lines -gt 20 ]]; then
+        echo $response | less
+    else
+        echo $response
+    fi
+}
 ```
 
