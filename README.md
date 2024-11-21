@@ -64,9 +64,9 @@ ai: what are quotes(") for?
 OPENAI_API_KEY=[YOUR OPENAI API KEY]
 export OPENAI_API_KEY
 
-ask() {
+ask() { 
     if [ $# -eq 0 ]; then
-        echo "ask: \c" 
+        echo "ask: \c"
         read user_input
         set -- $user_input
     fi
@@ -87,14 +87,18 @@ ai() {
     fi
 
     local prompt=$(printf "%s " "$@")
-    local response=$(askgpt --ai --prompt "$prompt")
-    # if response is longer than 20 lines, pipe it to less
-    local lines=$(echo $response | wc -l)
-    if [[ $lines -gt 20 ]]; then
-        echo $response | less
-    else
-        echo $response
-    fi
-}
-```
+    askgpt --ai --prompt "$prompt"
+}   
 
+rmd() {
+    pandoc $1 | lynx -stdin
+}
+
+# eval "$(starship init zsh)"
+
+
+
+# Created by `pipx` on 2024-04-12 15:55:51
+export PATH="$PATH:/home/srhall/.local/bin"
+export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
+```

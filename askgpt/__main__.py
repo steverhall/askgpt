@@ -1,8 +1,9 @@
 import argparse
 import asyncio
 import os
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, OpenAI
 from rich.console import Console
+from rich.live import Live
 from rich.markdown import Markdown
 
 console = Console()
@@ -24,6 +25,35 @@ async def query_chatgpt(prompt, system_prompt, model):
     )
 
     return response.choices[0].message.content
+
+def query_chatgpt_streaming(prompt, system_prompt, model):
+    if system_prompt == "":
+        system_prompt = default_system_prompt
+    msg_history = [{"role": "system", "content": system_prompt},
+                   {"role": "user", "content": prompt}]
+
+    client = OpenAI(
+        api_key=os.getenv("OPENAI_API_KEY")
+    )
+
+    # print messages as it arrives
+    response = client.chat.completions.create(
+        messages=msg_history,
+        model=model,
+        stream=True
+    )
+
+    markdown_content = ""
+
+    # Process each chunk as it arrives
+    with Live(refresh_per_second=8) as live:
+        for chunk in response:
+            new_content = chunk.choices[0].delta.content
+            # check if new_content is a string
+            if isinstance(new_content, str):
+                markdown_content += new_content
+                live.update(Markdown(markdown_content))
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="CLI for AI Assistant")
@@ -65,10 +95,10 @@ def main():
     model = args.model
 
     # Run the async query
-    response = asyncio.run(query_chatgpt(prompt, system_prompt, model))
     if args.ai:
-        console.print(Markdown(response))
+        query_chatgpt_streaming(prompt, system_prompt, model)
     else:
+        response = asyncio.run(query_chatgpt(prompt, system_prompt, model))
         console.print(response)
 
 if __name__ == "__main__":
