@@ -95,10 +95,4 @@ rmd() {
 }
 
 # eval "$(starship init zsh)"
-
-
-
-# Created by `pipx` on 2024-04-12 15:55:51
-export PATH="$PATH:/home/srhall/.local/bin"
-export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
 ```
