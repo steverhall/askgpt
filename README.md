@@ -93,6 +93,4 @@ ai() {
 rmd() {
     pandoc $1 | lynx -stdin
 }
-
-# eval "$(starship init zsh)"
 ```
