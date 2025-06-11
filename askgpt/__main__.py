@@ -10,14 +10,33 @@ console = Console()
 default_system_prompt = "You are an assistant that answers with a single Ubuntu Linux CLI command based on the request. No other output, it must be a valid Ubuntu Linux CLI command and if none can be given, respond with NULL. Again, only output the command, no markdown, no additional words or help."
 markdown_system_prompt = "You are an assistant that responds with output formatted in Markdown."
 
+def validate_openai_api_key():
+    """Validate that OPENAI_API_KEY environment variable is set."""
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        console.print("[red]Error: OPENAI_API_KEY environment variable is not set.[/red]")
+        console.print()
+        console.print("Please set your OpenAI API key as an environment variable:")
+        console.print("  export OPENAI_API_KEY='your-api-key-here'")
+        console.print()
+        console.print("You can also add it to your shell configuration file (e.g., ~/.zshrc or ~/.bashrc):")
+        console.print("  OPENAI_API_KEY=your-api-key-here")
+        console.print("  export OPENAI_API_KEY")
+        console.print()
+        console.print("Get your API key from: https://platform.openai.com/api-keys")
+        exit(1)
+    return api_key
+
 async def query_chatgpt(prompt, system_prompt, model):
+    api_key = validate_openai_api_key()
+    
     if system_prompt == "":
         system_prompt = default_system_prompt
     msg_history = [{"role": "system", "content": system_prompt},
                    {"role": "user", "content": prompt}]
 
     client = AsyncOpenAI(
-        api_key=os.getenv("OPENAI_API_KEY")    )
+        api_key=api_key    )
 
     response = await client.chat.completions.create(
         messages=msg_history,
@@ -27,13 +46,15 @@ async def query_chatgpt(prompt, system_prompt, model):
     return response.choices[0].message.content
 
 def query_chatgpt_streaming(prompt, system_prompt, model):
+    api_key = validate_openai_api_key()
+    
     if system_prompt == "":
         system_prompt = default_system_prompt
     msg_history = [{"role": "system", "content": system_prompt},
                    {"role": "user", "content": prompt}]
 
     client = OpenAI(
-        api_key=os.getenv("OPENAI_API_KEY")
+        api_key=api_key
     )
 
     # print messages as it arrives
