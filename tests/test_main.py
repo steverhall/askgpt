@@ -9,8 +9,36 @@ from askgpt.__main__ import (
     parse_args,
     main,
     default_system_prompt,
-    markdown_system_prompt
+    markdown_system_prompt,
+    validate_openai_api_key
 )
+
+
+class TestValidateOpenAIApiKey:
+    """Test the validate_openai_api_key function."""
+    
+    def test_validate_openai_api_key_success(self, mocker):
+        """Test validate_openai_api_key when API key is present."""
+        mocker.patch.dict(os.environ, {'OPENAI_API_KEY': 'test-api-key'})
+        
+        result = validate_openai_api_key()
+        
+        assert result == 'test-api-key'
+    
+    def test_validate_openai_api_key_missing(self, mocker):
+        """Test validate_openai_api_key when API key is missing."""
+        # Remove OPENAI_API_KEY from environment
+        mocker.patch.dict(os.environ, {}, clear=True)
+        mock_console = mocker.patch('askgpt.__main__.console')
+        
+        with pytest.raises(SystemExit) as exc_info:
+            validate_openai_api_key()
+        
+        assert exc_info.value.code == 1
+        # Verify error message was printed
+        assert mock_console.print.call_count >= 1
+        error_call_args = mock_console.print.call_args_list[0][0][0]
+        assert "OPENAI_API_KEY environment variable is not set" in error_call_args
 
 
 class TestQueryChatGPT:
