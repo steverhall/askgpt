@@ -1,6 +1,11 @@
 import argparse
 import asyncio
+import json
 import os
+import toml
+import uuid
+from datetime import datetime
+from pathlib import Path
 from openai import AsyncOpenAI, OpenAI
 from rich.console import Console
 from rich.live import Live
@@ -27,7 +32,40 @@ def validate_openai_api_key():
         exit(1)
     return api_key
 
-async def query_chatgpt(prompt, system_prompt, model):
+def get_config_dir():
+    """Get the askgpt configuration directory."""
+    config_dir = Path.home() / ".config" / "askgpt"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    return config_dir
+
+def get_config_file():
+    """Get the configuration file path."""
+    return get_config_dir() / "askgpt.toml"
+
+def load_config():
+    """Load configuration from askgpt.toml."""
+    config_file = get_config_file()
+    if config_file.exists():
+        try:
+            return toml.load(config_file)
+        except Exception:
+            return {}
+    return {}
+
+def save_config(config):
+    """Save configuration to askgpt.toml."""
+    config_file = get_config_file()
+    with open(config_file, "w") as f:
+        toml.dump(config, f)
+
+def get_default_config():
+    """Get default configuration values."""
+    return {
+        "model": "gpt-4o-mini",
+        "temperature": 0.7
+    }
+
+async def query_chatgpt(prompt, system_prompt, model, temperature=0.7):
     api_key = validate_openai_api_key()
     
     if system_prompt == "":
@@ -40,12 +78,13 @@ async def query_chatgpt(prompt, system_prompt, model):
 
     response = await client.chat.completions.create(
         messages=msg_history,
-        model=model
+        model=model,
+        temperature=temperature
     )
 
     return response.choices[0].message.content
 
-def query_chatgpt_streaming(prompt, system_prompt, model):
+def query_chatgpt_streaming(prompt, system_prompt, model, temperature=0.7):
     api_key = validate_openai_api_key()
     
     if system_prompt == "":
@@ -61,6 +100,7 @@ def query_chatgpt_streaming(prompt, system_prompt, model):
     response = client.chat.completions.create(
         messages=msg_history,
         model=model,
+        temperature=temperature,
         stream=True
     )
 
@@ -90,8 +130,15 @@ def parse_args():
         "--model",
         "-m",
         type=str,
-        default="gpt-4o-mini",
-        help="Specify the OpenAI model to use (default: gpt-4)."
+        default=None,
+        help="Specify the OpenAI model to use (default from config: gpt-4o-mini)."
+    )
+    parser.add_argument(
+        "--temperature",
+        "-t",
+        type=float,
+        default=None,
+        help="Temperature for the AI response (0.0-2.0, default from config: 0.7)."
     )
     parser.add_argument(
         "--ai",
@@ -111,15 +158,32 @@ def parse_args():
 
 def main():
     args = parse_args()
+    
+    # Load configuration and apply defaults
+    config = load_config()
+    defaults = get_default_config()
+    
+    # Create config file with defaults if it doesn't exist
+    if not get_config_file().exists():
+        save_config(defaults)
+        config = defaults
+    else:
+        # Ensure config has all required keys with defaults
+        for key, default_value in defaults.items():
+            if key not in config:
+                config[key] = default_value
+        save_config(config)
+    
     prompt = args.prompt
     system_prompt = markdown_system_prompt if args.ai else args.system_prompt
-    model = args.model
+    model = args.model if args.model is not None else config.get("model", defaults["model"])
+    temperature = args.temperature if args.temperature is not None else config.get("temperature", defaults["temperature"])
 
     # Run the async query
     if args.ai:
-        query_chatgpt_streaming(prompt, system_prompt, model)
+        query_chatgpt_streaming(prompt, system_prompt, model, temperature)
     else:
-        response = asyncio.run(query_chatgpt(prompt, system_prompt, model))
+        response = asyncio.run(query_chatgpt(prompt, system_prompt, model, temperature))
         console.print(response)
 
 if __name__ == "__main__":

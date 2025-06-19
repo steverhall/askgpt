@@ -69,7 +69,8 @@ class TestQueryChatGPT:
                 {"role": "system", "content": default_system_prompt},
                 {"role": "user", "content": "list all files"}
             ],
-            model="gpt-4o-mini"
+            model="gpt-4o-mini",
+            temperature=0.7
         )
 
     @pytest.mark.asyncio
@@ -99,7 +100,8 @@ class TestQueryChatGPT:
                 {"role": "system", "content": custom_prompt},
                 {"role": "user", "content": "Hello"}
             ],
-            model="gpt-4"
+            model="gpt-4",
+            temperature=0.7
         )
 
     @pytest.mark.asyncio 
@@ -167,6 +169,7 @@ class TestQueryChatGPTStreaming:
                 {"role": "user", "content": "test prompt"}
             ],
             model="gpt-4o-mini",
+            temperature=0.7,
             stream=True
         )
         
@@ -209,6 +212,7 @@ class TestQueryChatGPTStreaming:
                 {"role": "user", "content": "Hello"}
             ],
             model="gpt-4",
+            temperature=0.7,
             stream=True
         )
 
@@ -247,7 +251,8 @@ class TestParseArgs:
         
         assert args.prompt == 'test prompt'
         assert args.system_prompt == ''
-        assert args.model == 'gpt-4o-mini'
+        assert args.model is None
+        assert args.temperature is None
         assert args.ai is False
 
     def test_parse_args_all_custom_values(self, mocker):
@@ -257,6 +262,7 @@ class TestParseArgs:
             '--prompt', 'custom prompt',
             '--system-prompt', 'custom system prompt',
             '--model', 'gpt-4',
+            '--temperature', '0.5',
             '--ai'
         ]
         mocker.patch('sys.argv', test_args)
@@ -266,6 +272,7 @@ class TestParseArgs:
         assert args.prompt == 'custom prompt'
         assert args.system_prompt == 'custom system prompt'
         assert args.model == 'gpt-4'
+        assert args.temperature == 0.5
         assert args.ai is True
 
     def test_parse_args_short_flags(self, mocker):
@@ -275,6 +282,7 @@ class TestParseArgs:
             '-p', 'short prompt',
             '-s', 'short system',
             '-m', 'gpt-3.5-turbo',
+            '-t', '1.2',
             '-a'
         ]
         mocker.patch('sys.argv', test_args)
@@ -284,6 +292,7 @@ class TestParseArgs:
         assert args.prompt == 'short prompt'
         assert args.system_prompt == 'short system'
         assert args.model == 'gpt-3.5-turbo'
+        assert args.temperature == 1.2
         assert args.ai is True
 
 
@@ -297,9 +306,15 @@ class TestMain:
         mock_args.prompt = 'test prompt'
         mock_args.system_prompt = 'test system'
         mock_args.model = 'gpt-4'
+        mock_args.temperature = 0.8
         mock_args.ai = False
         
         mocker.patch('askgpt.__main__.parse_args', return_value=mock_args)
+        
+        # Mock configuration functions
+        mocker.patch('askgpt.__main__.load_config', return_value={'model': 'gpt-4o-mini', 'temperature': 0.7})
+        mocker.patch('askgpt.__main__.get_config_file').return_value.exists.return_value = True
+        mocker.patch('askgpt.__main__.save_config')
         
         # Mock query_chatgpt
         mock_query = mocker.patch('askgpt.__main__.query_chatgpt')
@@ -326,9 +341,15 @@ class TestMain:
         mock_args.prompt = 'ai prompt'
         mock_args.system_prompt = 'custom system'
         mock_args.model = 'gpt-4'
+        mock_args.temperature = None
         mock_args.ai = True
         
         mocker.patch('askgpt.__main__.parse_args', return_value=mock_args)
+        
+        # Mock configuration functions
+        mocker.patch('askgpt.__main__.load_config', return_value={'model': 'gpt-4o-mini', 'temperature': 0.7})
+        mocker.patch('askgpt.__main__.get_config_file').return_value.exists.return_value = True
+        mocker.patch('askgpt.__main__.save_config')
         
         # Mock query_chatgpt_streaming
         mock_streaming = mocker.patch('askgpt.__main__.query_chatgpt_streaming')
@@ -343,7 +364,8 @@ class TestMain:
         mock_streaming.assert_called_once_with(
             'ai prompt', 
             markdown_system_prompt,  # Should use markdown system prompt in AI mode
-            'gpt-4'
+            'gpt-4',
+            0.7  # Should use temperature from config since args.temperature is None
         )
         mock_asyncio_run.assert_not_called()
 
@@ -354,15 +376,22 @@ class TestMain:
         mock_args.prompt = 'test'
         mock_args.system_prompt = 'custom'
         mock_args.model = 'gpt-4'
+        mock_args.temperature = None
         mock_args.ai = True
         
         mocker.patch('askgpt.__main__.parse_args', return_value=mock_args)
+        
+        # Mock configuration functions
+        mocker.patch('askgpt.__main__.load_config', return_value={'model': 'gpt-4o-mini', 'temperature': 0.7})
+        mocker.patch('askgpt.__main__.get_config_file').return_value.exists.return_value = True
+        mocker.patch('askgpt.__main__.save_config')
+        
         mock_streaming = mocker.patch('askgpt.__main__.query_chatgpt_streaming')
         
         main()
         
         # In AI mode, should use markdown_system_prompt regardless of args.system_prompt
-        mock_streaming.assert_called_once_with('test', markdown_system_prompt, 'gpt-4')
+        mock_streaming.assert_called_once_with('test', markdown_system_prompt, 'gpt-4', 0.7)
         
         # Test non-AI mode uses provided system prompt
         mock_args.ai = False
