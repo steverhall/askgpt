@@ -127,7 +127,7 @@ class TestQueryChatGPTStreaming:
     """Test the sync query_chatgpt_streaming function with mocked OpenAI calls."""
 
     def test_query_chatgpt_streaming_with_default_system_prompt(self, mocker):
-        """Test query_chatgpt_streaming with empty system prompt."""
+        """Test query_chatgpt_streaming with message history."""
         # Mock OpenAI client and streaming response
         mock_client = Mock()
         mock_chunk1 = Mock()
@@ -157,18 +157,24 @@ class TestQueryChatGPTStreaming:
         mock_markdown = Mock()
         mocker.patch('askgpt.__main__.Markdown', return_value=mock_markdown)
         
-        # Call the function
-        query_chatgpt_streaming("test prompt", "", "gpt-4o-mini")
+        # Build message history as the new function expects
+        msg_history = [
+            {"role": "system", "content": default_system_prompt},
+            {"role": "user", "content": "test prompt"}
+        ]
+        
+        # Call the function with new signature
+        result = query_chatgpt_streaming(msg_history, "gpt-4o-mini")
         
         # Assertions
         mock_client.chat.completions.create.assert_called_once_with(
-            messages=[
-                {"role": "system", "content": default_system_prompt},
-                {"role": "user", "content": "test prompt"}
-            ],
+            messages=msg_history,
             model="gpt-4o-mini",
             stream=True
         )
+        
+        # Should return the concatenated content
+        assert result == "Hello World"
         
         # Verify Live context manager was used
         mock_live_instance.__enter__.assert_called_once()
@@ -178,7 +184,7 @@ class TestQueryChatGPTStreaming:
         # Markdown behavior is secondary to the core functionality
 
     def test_query_chatgpt_streaming_with_custom_system_prompt(self, mocker):
-        """Test query_chatgpt_streaming with custom system prompt."""
+        """Test query_chatgpt_streaming with custom message history."""
         mock_client = Mock()
         mock_chunk = Mock()
         mock_chunk.choices = [Mock()]
@@ -199,18 +205,24 @@ class TestQueryChatGPTStreaming:
         
         custom_prompt = "Be helpful and concise."
         
-        # Call the function
-        query_chatgpt_streaming("Hello", custom_prompt, "gpt-4")
+        # Build message history with custom system prompt
+        msg_history = [
+            {"role": "system", "content": custom_prompt},
+            {"role": "user", "content": "Hello"}
+        ]
+        
+        # Call the function with new signature
+        result = query_chatgpt_streaming(msg_history, "gpt-4")
         
         # Assertions
         mock_client.chat.completions.create.assert_called_once_with(
-            messages=[
-                {"role": "system", "content": custom_prompt},
-                {"role": "user", "content": "Hello"}
-            ],
+            messages=msg_history,
             model="gpt-4",
             stream=True
         )
+        
+        # Should return the response content
+        assert result == "Response"
 
     def test_query_chatgpt_streaming_api_key_from_env(self, mocker):
         """Test that query_chatgpt_streaming uses API key from environment."""
@@ -227,8 +239,13 @@ class TestQueryChatGPTStreaming:
         mock_live_instance.__enter__ = Mock(return_value=mock_live_instance)
         mock_live_instance.__exit__ = Mock(return_value=None)
         
-        # Call the function
-        query_chatgpt_streaming("test", "system", "gpt-4")
+        mocker.patch('askgpt.__main__.Markdown')
+        
+        # Build simple message history
+        msg_history = [{"role": "user", "content": "test"}]
+        
+        # Call the function with new signature
+        query_chatgpt_streaming(msg_history, "gpt-4")
         
         # Verify OpenAI was called with correct API key
         mock_openai_class.assert_called_once_with(api_key='streaming-api-key')
@@ -249,6 +266,7 @@ class TestParseArgs:
         assert args.system_prompt == ''
         assert args.model == 'gpt-4o-mini'
         assert args.ai is False
+        assert args.new_session is False  # Check default value
 
     def test_parse_args_all_custom_values(self, mocker):
         """Test parse_args with all custom values."""
@@ -267,6 +285,7 @@ class TestParseArgs:
         assert args.system_prompt == 'custom system prompt'
         assert args.model == 'gpt-4'
         assert args.ai is True
+        assert args.new_session is False  # Check default value
 
     def test_parse_args_short_flags(self, mocker):
         """Test parse_args with short flag versions."""
@@ -285,6 +304,23 @@ class TestParseArgs:
         assert args.system_prompt == 'short system'
         assert args.model == 'gpt-3.5-turbo'
         assert args.ai is True
+        assert args.new_session is False  # Default value
+
+    def test_parse_args_with_new_session_flag(self, mocker):
+        """Test parse_args with new session flag."""
+        test_args = [
+            'askgpt',
+            '--prompt', 'test prompt',
+            '--ai',
+            '--new-session'
+        ]
+        mocker.patch('sys.argv', test_args)
+        
+        args = parse_args()
+        
+        assert args.prompt == 'test prompt'
+        assert args.ai is True
+        assert args.new_session is True
 
 
 class TestMain:
@@ -298,6 +334,7 @@ class TestMain:
         mock_args.system_prompt = 'test system'
         mock_args.model = 'gpt-4'
         mock_args.ai = False
+        mock_args.new_session = False  # Add the new attribute
         
         mocker.patch('askgpt.__main__.parse_args', return_value=mock_args)
         
@@ -327,11 +364,23 @@ class TestMain:
         mock_args.system_prompt = 'custom system'
         mock_args.model = 'gpt-4'
         mock_args.ai = True
+        mock_args.new_session = False  # Add the new attribute
         
         mocker.patch('askgpt.__main__.parse_args', return_value=mock_args)
         
-        # Mock query_chatgpt_streaming
+        # Mock session management functions
+        mocker.patch('askgpt.__main__.get_current_session_id', return_value='test-session-id')
+        mock_load_session = mocker.patch('askgpt.__main__.load_session')
+        mock_load_session.return_value = {
+            "id": "test-session-id",
+            "created_at": "2023-01-01T00:00:00",
+            "messages": []
+        }
+        mocker.patch('askgpt.__main__.save_session')
+        
+        # Mock query_chatgpt_streaming to return a string
         mock_streaming = mocker.patch('askgpt.__main__.query_chatgpt_streaming')
+        mock_streaming.return_value = 'AI response'
         
         # Mock asyncio.run should not be called in AI mode
         mock_asyncio_run = mocker.patch('askgpt.__main__.asyncio.run')
@@ -340,11 +389,18 @@ class TestMain:
         main()
         
         # Assertions
-        mock_streaming.assert_called_once_with(
-            'ai prompt', 
-            markdown_system_prompt,  # Should use markdown system prompt in AI mode
-            'gpt-4'
-        )
+        mock_streaming.assert_called_once()
+        # Verify the call has the right message structure
+        call_args = mock_streaming.call_args
+        messages = call_args[0][0]
+        assert len(messages) >= 2  # Should have system and user messages
+        assert messages[0]['role'] == 'system'
+        assert messages[0]['content'] == markdown_system_prompt
+        # Find the user message (should be the second message in the list passed to streaming)
+        user_message = messages[1]
+        assert user_message['role'] == 'user'
+        assert user_message['content'] == 'ai prompt'
+        
         mock_asyncio_run.assert_not_called()
 
     def test_main_system_prompt_selection(self, mocker):
@@ -355,14 +411,29 @@ class TestMain:
         mock_args.system_prompt = 'custom'
         mock_args.model = 'gpt-4'
         mock_args.ai = True
+        mock_args.new_session = False  # Add the new attribute
         
         mocker.patch('askgpt.__main__.parse_args', return_value=mock_args)
+        
+        # Mock session management functions
+        mocker.patch('askgpt.__main__.get_current_session_id', return_value='test-session-id')
+        mock_load_session = mocker.patch('askgpt.__main__.load_session')
+        mock_load_session.return_value = {
+            "id": "test-session-id",
+            "created_at": "2023-01-01T00:00:00",
+            "messages": []
+        }
+        mocker.patch('askgpt.__main__.save_session')
+        
         mock_streaming = mocker.patch('askgpt.__main__.query_chatgpt_streaming')
+        mock_streaming.return_value = 'AI response'
         
         main()
         
         # In AI mode, should use markdown_system_prompt regardless of args.system_prompt
-        mock_streaming.assert_called_once_with('test', markdown_system_prompt, 'gpt-4')
+        call_args = mock_streaming.call_args
+        messages = call_args[0][0]
+        assert messages[0]['content'] == markdown_system_prompt
         
         # Test non-AI mode uses provided system prompt
         mock_args.ai = False
