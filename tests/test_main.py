@@ -264,7 +264,7 @@ class TestParseArgs:
         test_args = ['askgpt', '--prompt', 'test prompt']
         mocker.patch('sys.argv', test_args)
         
-        args = parse_args()
+        parser, args = parse_args()
         
         assert args.prompt == 'test prompt'
         assert args.system_prompt == ''
@@ -284,7 +284,7 @@ class TestParseArgs:
         ]
         mocker.patch('sys.argv', test_args)
         
-        args = parse_args()
+        parser, args = parse_args()
         
         assert args.prompt == 'custom prompt'
         assert args.system_prompt == 'custom system prompt'
@@ -303,7 +303,7 @@ class TestParseArgs:
         ]
         mocker.patch('sys.argv', test_args)
         
-        args = parse_args()
+        parser, args = parse_args()
         
         assert args.prompt == 'short prompt'
         assert args.system_prompt == 'short system'
@@ -321,7 +321,7 @@ class TestParseArgs:
         ]
         mocker.patch('sys.argv', test_args)
         
-        args = parse_args()
+        parser, args = parse_args()
         
         assert args.prompt == 'test prompt'
         assert args.ai is True
@@ -336,7 +336,7 @@ class TestParseArgs:
         ]
         mocker.patch('sys.argv', test_args)
         
-        args = parse_args()
+        parser, args = parse_args()
         
         assert args.prompt == 'test prompt'
         assert args.temperature == 0.5
@@ -355,7 +355,7 @@ class TestMain:
         mock_args.ai = False
         mock_args.new_session = False  # Add the new attribute
         
-        mocker.patch('askgpt.__main__.parse_args', return_value=mock_args)
+        mocker.patch('askgpt.__main__.parse_args', return_value=(Mock(), mock_args))
         
         # Mock query_chatgpt
         mock_query = mocker.patch('askgpt.__main__.query_chatgpt')
@@ -385,7 +385,7 @@ class TestMain:
         mock_args.ai = True
         mock_args.new_session = False  # Add the new attribute
         
-        mocker.patch('askgpt.__main__.parse_args', return_value=mock_args)
+        mocker.patch('askgpt.__main__.parse_args', return_value=(Mock(), mock_args))
         
         # Mock session management functions
         mocker.patch('askgpt.__main__.get_current_session_id', return_value='test-session-id')
@@ -432,7 +432,7 @@ class TestMain:
         mock_args.ai = True
         mock_args.new_session = False  # Add the new attribute
         
-        mocker.patch('askgpt.__main__.parse_args', return_value=mock_args)
+        mocker.patch('askgpt.__main__.parse_args', return_value=(Mock(), mock_args))
         
         # Mock session management functions
         mocker.patch('askgpt.__main__.get_current_session_id', return_value='test-session-id')
@@ -463,3 +463,33 @@ class TestMain:
         
         # Should use the custom system prompt from args
         assert mock_asyncio_run.call_count == 1
+
+    def test_main_no_prompt_shows_usage(self, mocker):
+        """Test that main shows usage and exits when no prompt is provided."""
+        # Mock parse_args to return arguments with None prompt
+        mock_args = Mock()
+        mock_args.prompt = None  # No prompt provided
+        mock_args.system_prompt = ''
+        mock_args.model = None
+        mock_args.ai = False
+        mock_args.new_session = False
+        mock_args.temperature = None
+        
+        # Mock parser
+        mock_parser = Mock(spec=argparse.ArgumentParser)
+        
+        # Mock parse_args to return parser and args
+        mocker.patch('askgpt.__main__.parse_args', return_value=(mock_parser, mock_args))
+        
+        # Mock console to suppress output during test
+        mock_console = mocker.patch('askgpt.__main__.console')
+        
+        # Expect SystemExit when no prompt provided
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        
+        # Should exit with code 1
+        assert exc_info.value.code == 1
+        
+        # Should have called print_help to show usage
+        mock_parser.print_help.assert_called_once()
