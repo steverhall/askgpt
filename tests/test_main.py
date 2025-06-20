@@ -69,7 +69,8 @@ class TestQueryChatGPT:
                 {"role": "system", "content": default_system_prompt},
                 {"role": "user", "content": "list all files"}
             ],
-            model="gpt-4o-mini"
+            model="gpt-4o-mini",
+            temperature=0.7
         )
 
     @pytest.mark.asyncio
@@ -99,7 +100,8 @@ class TestQueryChatGPT:
                 {"role": "system", "content": custom_prompt},
                 {"role": "user", "content": "Hello"}
             ],
-            model="gpt-4"
+            model="gpt-4",
+            temperature=0.7
         )
 
     @pytest.mark.asyncio 
@@ -170,6 +172,7 @@ class TestQueryChatGPTStreaming:
         mock_client.chat.completions.create.assert_called_once_with(
             messages=msg_history,
             model="gpt-4o-mini",
+            temperature=0.7,
             stream=True
         )
         
@@ -218,6 +221,7 @@ class TestQueryChatGPTStreaming:
         mock_client.chat.completions.create.assert_called_once_with(
             messages=msg_history,
             model="gpt-4",
+            temperature=0.7,
             stream=True
         )
         
@@ -264,7 +268,8 @@ class TestParseArgs:
         
         assert args.prompt == 'test prompt'
         assert args.system_prompt == ''
-        assert args.model == 'gpt-4o-mini'
+        assert args.model is None  # Now defaults to None to allow config override
+        assert args.temperature is None  # Now defaults to None to allow config override
         assert args.ai is False
         assert args.new_session is False  # Check default value
 
@@ -321,6 +326,20 @@ class TestParseArgs:
         assert args.prompt == 'test prompt'
         assert args.ai is True
         assert args.new_session is True
+
+    def test_parse_args_with_temperature_flag(self, mocker):
+        """Test parse_args with temperature flag."""
+        test_args = [
+            'askgpt',
+            '--prompt', 'test prompt',
+            '--temperature', '0.5'
+        ]
+        mocker.patch('sys.argv', test_args)
+        
+        args = parse_args()
+        
+        assert args.prompt == 'test prompt'
+        assert args.temperature == 0.5
 
 
 class TestMain:

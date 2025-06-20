@@ -109,7 +109,7 @@ def set_current_session_id(session_id):
     config["current_session"] = session_id
     save_config(config)
 
-async def query_chatgpt(prompt, system_prompt, model):
+async def query_chatgpt(prompt, system_prompt, model, temperature=0.7):
     api_key = validate_openai_api_key()
     
     if system_prompt == "":
@@ -122,12 +122,13 @@ async def query_chatgpt(prompt, system_prompt, model):
 
     response = await client.chat.completions.create(
         messages=msg_history,
-        model=model
+        model=model,
+        temperature=temperature
     )
 
     return response.choices[0].message.content
 
-def query_chatgpt_streaming(msg_history, model):
+def query_chatgpt_streaming(msg_history, model, temperature=0.7):
     api_key = validate_openai_api_key()
 
     client = OpenAI(
@@ -138,6 +139,7 @@ def query_chatgpt_streaming(msg_history, model):
     response = client.chat.completions.create(
         messages=msg_history,
         model=model,
+        temperature=temperature,
         stream=True
     )
 
@@ -169,8 +171,15 @@ def parse_args():
         "--model",
         "-m",
         type=str,
-        default="gpt-4o-mini",
-        help="Specify the OpenAI model to use (default: gpt-4)."
+        default=None,
+        help="Specify the OpenAI model to use (default: gpt-4o-mini or from config)."
+    )
+    parser.add_argument(
+        "--temperature",
+        "-t",
+        type=float,
+        default=None,
+        help="Set the temperature for AI responses (0.0 to 2.0, default: 0.7 or from config)."
     )
     parser.add_argument(
         "--ai",
@@ -198,7 +207,13 @@ def main():
     args = parse_args()
     prompt = args.prompt
     system_prompt = markdown_system_prompt if args.ai else args.system_prompt
-    model = args.model
+    
+    # Load config for model and temperature defaults
+    config = load_config()
+    
+    # Use CLI values if provided, otherwise fall back to config, then hardcoded defaults
+    model = args.model if args.model is not None else config.get("model", "gpt-4o-mini")
+    temperature = args.temperature if args.temperature is not None else config.get("temperature", 0.7)
 
     # Run the async query
     if args.ai:
@@ -237,7 +252,7 @@ def main():
         msg_history.append({"role": "user", "content": prompt})
         
         # Get AI response
-        ai_response = query_chatgpt_streaming(msg_history, model)
+        ai_response = query_chatgpt_streaming(msg_history, model, temperature)
         
         # Add AI response to message history
         msg_history.append({"role": "assistant", "content": ai_response})
@@ -256,7 +271,7 @@ def main():
         # Save updated session
         save_session(session_data)
     else:
-        response = asyncio.run(query_chatgpt(prompt, system_prompt, model))
+        response = asyncio.run(query_chatgpt(prompt, system_prompt, model, temperature))
         console.print(response)
 
 if __name__ == "__main__":
