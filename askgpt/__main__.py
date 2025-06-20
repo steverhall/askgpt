@@ -201,10 +201,16 @@ def parse_args():
         action="store_true",
         help="Start a new AI conversation session (only used with --ai flag)."
     )
-    return parser.parse_args()
+    return parser, parser.parse_args()
 
 def main():
-    args = parse_args()
+    parser, args = parse_args()
+    
+    # Check if no prompt was provided
+    if args.prompt is None:
+        parser.print_help()
+        exit(1)
+    
     prompt = args.prompt
     system_prompt = markdown_system_prompt if args.ai else args.system_prompt
     
