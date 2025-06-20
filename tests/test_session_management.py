@@ -147,3 +147,24 @@ class TestSessionManagement:
             # Should be able to set and retrieve session after corruption
             set_current_session_id("new-session")
             assert get_current_session_id() == "new-session"
+
+    def test_config_model_and_temperature_defaults(self, mocker):
+        """Test that config can store and retrieve model and temperature settings."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mock_home = Path(temp_dir)
+            mocker.patch('askgpt.__main__.Path.home', return_value=mock_home)
+            
+            # Initially should have no config values
+            config = load_config()
+            assert config.get("model") is None
+            assert config.get("temperature") is None
+            
+            # Set model and temperature in config
+            config["model"] = "gpt-4"
+            config["temperature"] = 0.5
+            save_config(config)
+            
+            # Should be able to retrieve them
+            loaded_config = load_config()
+            assert loaded_config["model"] == "gpt-4"
+            assert loaded_config["temperature"] == 0.5

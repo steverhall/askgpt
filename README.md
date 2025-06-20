@@ -54,6 +54,31 @@ ai: what are quotes(") for?
 2. `pipx install ./askgpt`
 
 
+## Configuration
+
+Askgpt supports configuration through a TOML file located at `$HOME/.config/askgpt/askgpt.toml`.
+
+You can set default values for model and temperature:
+
+```toml
+model = "gpt-4"
+temperature = 0.8
+```
+
+Command line arguments will override config file values:
+
+```bash
+# Uses model and temperature from config file
+askgpt --prompt "Hello"
+
+# Overrides config file model
+askgpt --model "gpt-3.5-turbo" --prompt "Hello"
+
+# Overrides config file temperature  
+askgpt --temperature 0.3 --prompt "Hello"
+```
+
+
 ## Uninstall
 
 `pipx uninstall askgpt`
