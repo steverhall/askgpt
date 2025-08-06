@@ -87,6 +87,58 @@ Add this to your `.zshrc`:
 zinit light steverhall/askgpt
 ```
 
+#### Windows
+
+```powershell
+if (!(Test-Path -Path $PROFILE)) {
+    New-Item -Type File -Path $PROFILE -Force
+}
+notepad $PROFILE
+```
+
+Add the following contents to your PowerShell profile:
+
+```powershell
+function ask {
+    param(
+        [Parameter(ValueFromRemainingArguments = $true)]
+        [string[]]$Prompt
+    )
+    if (-not $Prompt) {
+        $Prompt = Read-Host "ask"
+    } else {
+        $Prompt = $Prompt -join " "
+    }
+    $cmd = askgpt --prompt "$Prompt"
+    if ($cmd -eq "NULL") {
+        Write-Host "No results found"
+    } else {
+        # Place command in command line for review (simulate with clipboard)
+        Set-Clipboard $cmd
+        Write-Host "Command copied to clipboard. Paste and press Enter to run."
+    }
+}
+
+function ai {
+    param(
+        [Parameter(ValueFromRemainingArguments = $true)]
+        [string[]]$Prompt
+    )
+    if (-not $Prompt) {
+        $Prompt = Read-Host "ai"
+    } else {
+        $Prompt = $Prompt -join " "
+    }
+    askgpt --ai --prompt "$Prompt"
+}
+```
+
+Then, as admin:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
 ### 3. Set your OpenAI API key
 
 Edit `askgpt.plugin.zsh` or set in your `.zshrc`:

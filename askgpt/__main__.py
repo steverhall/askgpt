@@ -12,7 +12,17 @@ from rich.live import Live
 from rich.markdown import Markdown
 
 console = Console()
-default_system_prompt = "You are an assistant that answers with a single Ubuntu Linux CLI command based on the request. No other output, it must be a valid Ubuntu Linux CLI command and if none can be given, respond with NULL. Again, only output the command, no markdown, no additional words or help."
+import platform
+os_name = platform.system()
+if os_name == "Windows":
+    os_desc = "Windows (PowerShell)"
+elif os_name == "Darwin":
+    os_desc = "macOS (zsh/bash)"
+elif os_name == "Linux":
+    os_desc = "Linux (bash/zsh)"
+else:
+    os_desc = os_name
+default_system_prompt = f"You are an assistant that answers with a single {os_desc} CLI command based on the request. No other output, it must be a valid {os_desc} CLI command and if none can be given, respond with NULL. Again, only output the command, no markdown, no additional words or help."
 markdown_system_prompt = "You are an assistant that responds with output formatted in Markdown."
 
 def validate_openai_api_key():
