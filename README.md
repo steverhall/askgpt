@@ -50,9 +50,50 @@ ai: what are quotes(") for?
 
 ## Installation
 
-1. Clone repository
-2. `pipx install ./askgpt`
+### 1. Install the CLI
 
+Clone the repository and install with pipx (recommended):
+
+```sh
+git clone https://github.com/steverhall/askgpt.git
+cd askgpt
+pipx install .
+```
+
+### 2. Enable the zsh plugin (optional, for best integration)
+
+Copy or symlink `askgpt.plugin.zsh` to a directory in your fpath, or source it directly in your `.zshrc`:
+
+```sh
+# Add this to your ~/.zshrc
+source /path/to/askgpt/askgpt.plugin.zsh
+```
+
+#### Oh-My-Zsh
+
+Clone or symlink the plugin into your custom plugins directory, then add `askgpt` to your plugins list in `.zshrc`:
+
+```sh
+git clone https://github.com/steverhall/askgpt.git $ZSH_CUSTOM/plugins/askgpt
+# In your .zshrc:
+plugins=(... askgpt)
+```
+
+#### zinit
+
+Add this to your `.zshrc`:
+
+```sh
+zinit light steverhall/askgpt
+```
+
+### 3. Set your OpenAI API key
+
+Edit `askgpt.plugin.zsh` or set in your `.zshrc`:
+
+```sh
+export OPENAI_API_KEY=[YOUR OPENAI API KEY]
+```
 
 ## Configuration
 
@@ -81,41 +122,15 @@ askgpt --temperature 0.3 --prompt "Hello"
 
 ## Uninstall
 
-`pipx uninstall askgpt`
-
-
-## Sample .zshrc
+```sh
+pipx uninstall askgpt
 ```
-OPENAI_API_KEY=[YOUR OPENAI API KEY]
-export OPENAI_API_KEY
 
-ask() { 
-    if [ $# -eq 0 ]; then
-        echo "ask: \c"
-        read user_input
-        set -- $user_input
-    fi
+## Shell Functions (for reference)
 
-    local prompt=$(printf "%s " "$@")
-    local cmd=$(askgpt --prompt "$prompt")
-    if [[ $cmd == NULL ]]; then
-        print "No results found"
-    else
-        print -z $cmd
-    fi
-}
-ai() {
-    if [ $# -eq 0 ]; then
-        echo "ai: \c"
-        read user_input
-        set -- $user_input
-    fi
+The plugin provides these functions:
 
-    local prompt=$(printf "%s " "$@")
-    askgpt --ai --prompt "$prompt"
-}   
-
-rmd() {
-    pandoc $1 | lynx -stdin
-}
+```zsh
+ask  # Query for a CLI command and queue it for execution
+ai   # Query for a general answer
 ```
